@@ -1,11 +1,12 @@
 package space.wisnuwiry.camera_works
 
+import org.json.JSONObject
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.util.Log
+import io.flutter.Log
 import android.view.Surface
 import androidx.annotation.NonNull
 import androidx.camera.core.*
@@ -66,6 +67,8 @@ class CameraWorksHandler(private val binding: ActivityPluginBinding, private val
             "switchCamera" -> switchCamera(call, result)
             "stop" -> stop(result)
             "takePicture" -> takePicture(result)
+            "setZoomRatio" -> setZoomRatio(call, result)
+            "setFocus" -> setFocus(call, result)
             else -> result.notImplemented()
         }
     }
@@ -387,6 +390,71 @@ class CameraWorksHandler(private val binding: ActivityPluginBinding, private val
         }
     }
 
+    private fun setZoomRatio(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            camera!!.cameraControl.setZoomRatio((call.arguments as Double).toFloat())
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        } catch (e: Exception) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        }
+    }
+
+    private fun setFocus(call: MethodCall, result: MethodChannel.Result) {
+        try {
+            Log.d(TAG,"camera_works - call.arguments 0: ${call.arguments}")
+            Log.d(TAG,"camera_works - call.arguments 1: ${call.arguments::class.simpleName}")
+            Log.d(TAG,"camera_works - call.arguments 2: " + JSONObject(call.arguments as String).toString())
+            val para = JSONObject(call.arguments as String)
+            Log.d(TAG,"camera_works - call.arguments 3.1: " + para.getDouble("x"))
+            val autoFocusPoint = SurfaceOrientedMeteringPointFactory(para.getDouble("width").toFloat(), para.getDouble("height").toFloat())
+                    .createPoint(para.getDouble("x").toFloat(), para.getDouble("y").toFloat())
+            // Create a MeteringAction from the MeteringPoint, you can configure it to specify the metering mode
+//            val action = FocusMeteringAction.Builder(autoFocusPoint).build()
+            // Trigger the focus and metering. The method returns a ListenableFuture since the operation
+            // is asynchronous. You can use it get notified when the focus is successful or if it fails.
+            //            camera!!.cameraControl.startFocusAndMetering(action)
+            camera!!.cameraControl.startFocusAndMetering(
+                    FocusMeteringAction.Builder(
+                            autoFocusPoint,
+                            FocusMeteringAction.FLAG_AF
+                    ).apply {
+                        //focus only when the user tap the preview
+                        disableAutoCancel()
+                    }.build()
+//                val autoFocusPoint = SurfaceOrientedMeteringPointFactory(1f, 1f)
+//                        .createPoint(.5f, .5f)
+//                val autoFocusAction = FocusMeteringAction.Builder(
+//                        autoFocusPoint,
+//                        FocusMeteringAction.FLAG_AF
+//                ).apply {
+//                    //start auto-focusing after 2 seconds
+//                    setAutoCancelDuration(1, TimeUnit.SECONDS)
+//                }.build()
+//                camera!!.cameraControl.startFocusAndMetering(autoFocusAction)
+            )
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        } catch (e: IllegalArgumentException) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        } catch (e: RuntimeException) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        } catch (e: Exception) {
+            Log.e(TAG, e.message ?: "")
+            result.error(ERROR_CODE, e.message, e.stackTrace)
+        }
+    }
     /** Use app's file directory */
     private fun getOutputDirectory(context: Context): File {
         val appContext = context.applicationContext
